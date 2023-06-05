@@ -15,6 +15,7 @@
                  ;; [io.pedestal/pedestal.tomcat "0.5.11-beta-1"]
 
                  [datalevin "0.8.16"]
+                 [metosin/malli "0.11.0"]
 
                  [ch.qos.logback/logback-classic "1.2.10" :exclusions [org.slf4j/slf4j-api]]
                  [org.slf4j/jul-to-slf4j "1.7.35"]
