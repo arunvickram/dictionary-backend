@@ -1,5 +1,6 @@
 (ns dictionary-backend.db
-  (:require [datalevin.core :as d]))
+  (:require [datalevin.core :as d]
+            [dictionary-backend.db :as db]))
 
 (def schema
   {:word/text #:db{:valueType :db.type/string
@@ -15,6 +16,7 @@
    :word/variants #:db{:valueType :db.type/ref
                        :cardinality :db.cardinality/many} ; these are simply stylistic variants of the word
    :word.declension/eng-representation #:db{:valueType :db.type/string}
+   :word.declension/text #:db{:valueType :db.type/string} ; the affixes to add
    :word.declension/tags #:db{:valueType :db.type/ref
                               :cardinality :db.cardinality/many}
    :word.declension/root #:db{:valueType :db.type/ref
@@ -27,10 +29,28 @@
 
 (def conn (d/get-conn "/tmp/datalevin/dictionary" schema))
 
+(defn get-word [db word]
+  (d/q '[:find (pull ?e ["*" #:word{:translations ["*"]
+                                    :declensions ["*" {:word.declension/tags [:word.declension.tag/name
+                                                                              :word.declension.tag/text]}]}])
+         :in $ ?text
+         :where
+         [?e :word/text ?text]]
+       db
+       word))
 
+(defn get-declension-for-word [db word tags]
+  (d/q '[:find ?text
+         :in $ ?word ?tags
+         :where
+         [?e :word.declension/root ?word]
+         [?e :word.declension/tags ]
+         [?e :word/text ?text]]
+       db
+       word
+       tags))
 
 (comment
-
   (d/transact! conn
                [{:db/id -1
                  :word/type :verb
@@ -54,6 +74,7 @@
                 {:db/id -6
                  :word/type :verb
                  :word/text "இருந்தேன்"
+                 :word/
                  :word/iso693-3 "tam"
                  :word.declension/tags [-3 -4]
                  :word.declension/eng-representation "I was"
@@ -86,14 +107,8 @@
   (d/entries db "o")
 
 
-  (d/q '[:find (pull ?e ["*" {:word/translations ["*"]
-                              :word/declensions ["*" {:word.declension/tags [:word.declension.tag/name
-                                                                             :word.declension.tag/text]}]}])
-         :in $ ?text
-         :where
-         [?e :word/text ?text]]
-       (d/db conn)
-       "இரு")
+  (get-word (d/db conn) "இரு")
+
 
   (d/q '[:find (pull ?e ["*"])
          :in $ ?tag
