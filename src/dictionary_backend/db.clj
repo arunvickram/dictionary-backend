@@ -5,6 +5,7 @@
   [#:db{:ident :word/text
         :cardinality :db.cardinality/one
         :valueType :db.type/string
+        :fulltext true
         :doc "The base word's textual representation."}
 
    #:db{:ident :word/lang
@@ -57,42 +58,49 @@
 
    #:db{:ident :word.inflection/root
         :cardinality :db.cardinality/one
-        :valueType :db.type/string}
+        :valueType :db.type/string
+        :doc "The root of the word."}
 
    #:db{:ident :word.inflection/prefix
         :cardinality :db.cardinality/one
-        :valueType :db.type/string}
+        :valueType :db.type/string
+        :doc "The prefixes that would be added to modify this word"}
 
    #:db{:ident :word.inflection/suffix
         :cardinality :db.cardinality/one
-        :valueType :db.type/string}
+        :valueType :db.type/string
+        :doc "The suffixes that would be added to modify this word"}
 
    #:db{:ident :word.inflection.tag/text
         :cardinality :db.cardinality/one
-        :valueType :db.type/string}
+        :valueType :db.type/string
+        :doc "The human readable representation of this inflection tag"}
 
    #:db{:ident :word.inflection.tag/name
         :cardinality :db.cardinality/one
         :valueType :db.type/keyword
-        :unique :db.unique/identity}])
+        :unique :db.unique/identity
+        :doc "The internal name of the tag"}])
 
 (def db-uri "datomic:mem://hello")
 
 (def conn (d/connect db-uri))
 
-(defn get-word [db word]
+(defn get-word [db word lang]
   (d/q '[:find (pull ?e [:* #:word{:translations [:*]
                                    :inflections [:* {:word.inflection/tags [:word.inflection.tag/name
                                                                             :word.inflection.tag/text]}]}])
-         :in $ ?text
+         :in $ ?search-term ?lang
          :where
-         [?e :word/text ?text]]
+         [(fulltext $ :word/text ?search-term) [[?e ?text]]]
+         [?e :word/lang ?lang]]
        db
-       word))
+       word
+       lang))
 
 (defn get-declension-for-word [db word tags]
   (d/q '[:find ?text
-         :in $ ?word ?tags
+         :in $ ?word [?tags ...]
          :where
          [?e :word.inflection/root ?word]
          [?e :word.inflection/tags ]
@@ -125,10 +133,10 @@
                  :word.inflection.tag/name :tense/past}
                 {:db/id -4
                  :word.inflection.tag/text "1st person"
-                 :word.inflection.tag/name :first-person}
+                 :word.inflection.tag/name :person/first}
                 {:db/id -5
                  :word.inflection.tag/text "Plural"
-                 :word.inflection.tag/name :plural}
+                 :word.inflection.tag/name :number/plural}
                 {:db/id -6
                  :word/type :verb
                  :word/text "இருந்தேன்"
@@ -150,8 +158,7 @@
                  :word.inflection/root "இரு"
                  :word.inflection/suffix "க்கிறேன்"}])
 
-
-  (get-word (d/db conn) "இரு")
+  (count (get-word (d/db conn) "இருந்தேன்" "tam"))
 
 
   (d/q '[:find (pull ?e ["*"])
