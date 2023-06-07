@@ -83,7 +83,7 @@
         :doc "The internal name of the tag"}])
 
 (def db-uri "datomic:mem://hello")
-
+(d/create-database db-uri)
 (def conn (d/connect db-uri))
 
 (defn get-word [db word lang]
@@ -100,17 +100,17 @@
 
 (defn get-declension-for-word [db word tags]
   (d/q '[:find ?text
-         :in $ ?word [?tags ...]
+         :in $ ?word [?tag-name ...]
          :where
          [?e :word.inflection/root ?word]
-         [?e :word.inflection/tags ]
+         [?e :word.inflection/tags ?tag]
+         [?tag :word.inflection.tag/name ?tag-name]
          [?e :word/text ?text]]
        db
        word
        tags))
 
 (comment
-  (d/create-database db-uri)
 
   @(d/transact conn schema)
 
@@ -158,7 +158,11 @@
                  :word.inflection/root "இரு"
                  :word.inflection/suffix "க்கிறேன்"}])
 
-  (count (get-word (d/db conn) "இருந்தேன்" "tam"))
+  (count )
+
+(-> (get-word (d/db conn) "இரு" "tam")
+    (first)
+    (first))
 
 
   (d/q '[:find (pull ?e ["*"])
