@@ -1,5 +1,3 @@
-
-
 (defproject dictionary-backend "0.0.1-SNAPSHOT"
   :description "FIXME: write description"
   :url "http://example.com/FIXME"
@@ -14,9 +12,14 @@
                  ;; [io.pedestal/pedestal.immutant "0.5.11-beta-1"]
                  ;; [io.pedestal/pedestal.tomcat "0.5.11-beta-1"]
 
-                 [datalevin "0.8.16"]
-                 [metosin/malli "0.11.0"]
                  [com.datomic/peer "1.0.6733"]
+                 [metosin/jsonista "0.3.7"]
+                 [metosin/malli "0.11.0"]
+                 [metosin/muuntaja "0.6.8"]
+                 [metosin/reitit "0.7.0-alpha4"]
+                 [metosin/reitit-pedestal "0.7.0-alpha4"]
+                 [mount "0.1.17"]
+
                  [lambdaisland/kaocha "1.84.1335"]
 
                  [ch.qos.logback/logback-classic "1.2.10" :exclusions [org.slf4j/slf4j-api]]

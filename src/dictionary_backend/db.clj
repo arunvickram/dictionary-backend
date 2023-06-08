@@ -52,6 +52,11 @@
         :valueType :db.type/ref
         :cardinality :db.cardinality/many}
 
+   #:db{:ident :word.inflection/tags-id
+        :valueType :db.type/tuple
+        :cardinality :db.cardinality/one
+        :tupleType :db.type/keyword}
+
    #:db{:ident :word.inflection/root-ref
         :valueType :db.type/ref
         :cardinality :db.cardinality/one}
@@ -89,7 +94,7 @@
 (defn get-word [db word lang]
   (d/q '[:find (pull ?e [:* #:word{:translations [:*]
                                    :inflections [:* {:word.inflection/tags [:word.inflection.tag/name
-                                                                            :word.inflection.tag/text]}]}])
+                                                                            :word.inflection.tag/text]}]}]) .
          :in $ ?search-term ?lang
          :where
          [(fulltext $ :word/text ?search-term) [[?e ?text]]]
@@ -99,12 +104,11 @@
        lang))
 
 (defn get-declension-for-word [db word tags]
-  (d/q '[:find ?text
-         :in $ ?word [?tag-name ...]
+  (d/q '[:find (pull ?e [:*]) .
+         :in $ ?word ?tags
          :where
          [?e :word.inflection/root ?word]
-         [?e :word.inflection/tags ?tag]
-         [?tag :word.inflection.tag/name ?tag-name]
+         [?e :word.inflection/tags-id ?tags]
          [?e :word/text ?text]]
        db
        word
@@ -142,6 +146,7 @@
                  :word/text "இருந்தேன்"
                  :word/lang "tam"
                  :word.inflection/tags [-3 -4]
+                 :word.inflection/tags-id [:tense/past :person/first :number/singular]
                  :word.inflection/eng-representation "I was"
                  :word.inflection/root-ref -1
                  :word.inflection/root "இரு"
@@ -154,6 +159,7 @@
                  :word/text "இருக்கிறேன்"
                  :word/lang "tam"
                  :word.inflection/tags [-7 -4]
+                 :word.inflection/tags-id [:tense/present :person/first :number/singular]
                  :word.inflection/eng-representation "I am"
                  :word.inflection/root "இரு"
                  :word.inflection/suffix "க்கிறேன்"}])
@@ -161,9 +167,11 @@
   (count )
 
 (-> (get-word (d/db conn) "இரு" "tam")
+
     (first)
     (first))
 
+(get-declension-for-word (d/db conn) "இரு" [:tense/present :person/first :number/singular])
 
   (d/q '[:find (pull ?e ["*"])
          :in $ ?tag
