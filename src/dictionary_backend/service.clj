@@ -12,23 +12,29 @@
             [reitit.http.interceptors.exception :as exception]
             [reitit.http.interceptors.multipart :as multipart]
             [muuntaja.core :as m]
+            [dictionary-backend.db :as db]
             [ring.util.response :as ring-resp]))
 
-(defn about-page
-  [request]
+(defn home-page
+  [req]
   {:status 200
    :body {:hello "there"}})
 
-(defn home-page
-  [request]
-  {:status 200
-   :body {:hello "there"}}
-  )
+(defn get-word-info [req]
+  (let [{:keys [word lang]} (:path-params req)]
+    (prn (:path-params req))
+    (let [result (db/get-word word lang)]
+      {:status 200
+       :body result})))
+
+(get-word-info {:word "இரு" :lang "tam"})
+
 
 ;; Defines "/" and "/about" routes with their associated :get handlers.
 ;; The interceptors defined after the verb map (e.g., {:get home-page}
 ;; apply to / and its children (/about).
-(def routes [["/" {:get {:handler home-page}}]])
+(def routes [["/" {:get {:handler home-page}}]
+             ["/:lang/:word" {:get {:handler get-word-info}}]])
 
 (def router-options
   {:exception pretty/exception
@@ -89,12 +95,12 @@
               ::server/port 8080
               ;; Options to pass to the container (Jetty)
               ::server/container-options {:h2c? true
-                                        :h2? false
+                                          :h2? false
                                         ;:keystore "test/hp/keystore.jks"
                                         ;:key-password "password"
                                         ;:ssl-port 8443
-                                        :ssl? false
-                                        ;; Alternatively, You can specify your own Jetty HTTPConfiguration
-                                        ;; via the `:io.pedestal.http.jetty/http-configuration` container option.
+                                          :ssl? false
+                                          ;; Alternatively, You can specify your own Jetty HTTPConfiguration
+                                          ;; via the `:io.pedestal.http.jetty/http-configuration` container option.
                                         ;:io.pedestal.http.jetty/http-configuration (org.eclipse.jetty.server.HttpConfiguration.)
-                                        }})
+                                          }})

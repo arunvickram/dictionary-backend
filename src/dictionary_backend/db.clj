@@ -1,5 +1,6 @@
 (ns dictionary-backend.db
-  (:require [datomic.api :as d]))
+  (:require [datomic.api :as d]
+            [mount.core :as mount :refer [defstate]]))
 
 (def schema
   [#:db{:ident :word/text
@@ -87,41 +88,43 @@
         :unique :db.unique/identity
         :doc "The internal name of the tag"}])
 
-(def db-uri "datomic:mem://hello")
-(d/create-database db-uri)
-(def conn (d/connect db-uri))
+(defstate datomic
+  :start (do
+           (def db-uri "datomic:mem://hello")
+           (d/create-database db-uri)
+           (d/connect db-uri)))
 
-(defn get-word [db word lang]
+(defn get-word [word lang]
   (d/q '[:find (pull ?e [:* #:word{:translations [:*]
                                    :inflections [:* {:word.inflection/tags [:word.inflection.tag/name
                                                                             :word.inflection.tag/text]}]}]) .
-         :in $ ?search-term ?lang
+         :in $ ?word ?lang
          :where
-         [(fulltext $ :word/text ?search-term) [[?e ?text]]]
+         [(fulltext $ :word/text ?word) [[?e ?text]]]
          [?e :word/lang ?lang]]
-       db
+       (d/db datomic)
        word
        lang))
 
-(defn get-declension-for-word [db word tags]
+(defn get-declension-for-word [word tags]
   (d/q '[:find (pull ?e [:*]) .
          :in $ ?word ?tags
          :where
          [?e :word.inflection/root ?word]
          [?e :word.inflection/tags-id ?tags]
          [?e :word/text ?text]]
-       db
+       (d/db datomic)
        word
        tags))
 
 (comment
 
-  @(d/transact conn schema)
+  @(d/transact datomic schema)
 
   (first schema)
 
 
-  @(d/transact conn
+  @(d/transact datomic
                [{:db/id -1
                  :word/type :verb
                  :word/text "இரு"
@@ -164,14 +167,8 @@
                  :word.inflection/root "இரு"
                  :word.inflection/suffix "க்கிறேன்"}])
 
-  (count )
 
-(-> (get-word (d/db conn) "இரு" "tam")
-
-    (first)
-    (first))
-
-(get-declension-for-word (d/db conn) "இரு" [:tense/present :person/first :number/singular])
+  (get-declension-for-word (d/db conn) "இரு" [:tense/present :person/first :number/singular])
 
   (d/q '[:find (pull ?e ["*"])
          :in $ ?tag
