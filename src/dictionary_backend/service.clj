@@ -13,7 +13,9 @@
             [reitit.http.interceptors.multipart :as multipart]
             [muuntaja.core :as m]
             [dictionary-backend.db :as db]
-            [ring.util.response :as ring-resp]))
+            [ring.util.response :as ring-resp]
+            [clojure.string :as str]
+            [clojure.edn :as edn]))
 
 (defn home-page
   [req]
@@ -22,19 +24,22 @@
 
 (defn get-word-info [req]
   (let [{:keys [word lang]} (:path-params req)]
-    (prn (:path-params req))
-    (let [result (db/get-word word lang)]
+    (if-let [result (db/get-word word lang)]
       {:status 200
-       :body result})))
+       :body result}
+      {:status 404})))
 
-(get-word-info {:word "இரு" :lang "tam"})
+(defn get-word-inflection [req]
+  (let [{:keys [word lang tags]} (:path-params req)
+        tags (str/split tags #",")]
+    (if-let [result (db/get-inflection-for-word word tags)]
+      {:status 200
+       :body result}
+      {:status 404})))
 
-
-;; Defines "/" and "/about" routes with their associated :get handlers.
-;; The interceptors defined after the verb map (e.g., {:get home-page}
-;; apply to / and its children (/about).
 (def routes [["/" {:get {:handler home-page}}]
-             ["/:lang/:word" {:get {:handler get-word-info}}]])
+             ["/:lang/:word" {:get {:handler get-word-info}}]
+             ["/:lang/:word/tags/:tags" {:get {:handler get-word-inflection}}]])
 
 (def router-options
   {:exception pretty/exception

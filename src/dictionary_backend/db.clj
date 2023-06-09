@@ -56,7 +56,7 @@
    #:db{:ident :word.inflection/tags-id
         :valueType :db.type/tuple
         :cardinality :db.cardinality/one
-        :tupleType :db.type/keyword}
+        :tupleType :db.type/string}
 
    #:db{:ident :word.inflection/root-ref
         :valueType :db.type/ref
@@ -95,9 +95,13 @@
            (d/connect db-uri)))
 
 (defn get-word [word lang]
-  (d/q '[:find (pull ?e [:* #:word{:translations [:*]
-                                   :inflections [:* {:word.inflection/tags [:word.inflection.tag/name
-                                                                            :word.inflection.tag/text]}]}]) .
+  (d/q '[:find (pull ?e [:* #:word{:translations
+                                   [:*]
+
+                                   :inflections
+                                   [:* {:word.inflection/tags
+                                        [:word.inflection.tag/name
+                                         :word.inflection.tag/text]}]}]) .
          :in $ ?word ?lang
          :where
          [(fulltext $ :word/text ?word) [[?e ?text]]]
@@ -106,7 +110,7 @@
        word
        lang))
 
-(defn get-declension-for-word [word tags]
+(defn get-inflection-for-word [word tags]
   (d/q '[:find (pull ?e [:*]) .
          :in $ ?word ?tags
          :where
@@ -120,9 +124,6 @@
 (comment
 
   @(d/transact datomic schema)
-
-  (first schema)
-
 
   @(d/transact datomic
                [{:db/id -1
@@ -149,7 +150,7 @@
                  :word/text "இருந்தேன்"
                  :word/lang "tam"
                  :word.inflection/tags [-3 -4]
-                 :word.inflection/tags-id [:tense/past :person/first :number/singular]
+                 :word.inflection/tags-id ["past-tense" "first-person" "singular"]
                  :word.inflection/eng-representation "I was"
                  :word.inflection/root-ref -1
                  :word.inflection/root "இரு"
@@ -162,13 +163,13 @@
                  :word/text "இருக்கிறேன்"
                  :word/lang "tam"
                  :word.inflection/tags [-7 -4]
-                 :word.inflection/tags-id [:tense/present :person/first :number/singular]
+                 :word.inflection/tags-id ["present-tense" "first-person" "singular"]
                  :word.inflection/eng-representation "I am"
                  :word.inflection/root "இரு"
                  :word.inflection/suffix "க்கிறேன்"}])
 
 
-  (get-declension-for-word (d/db conn) "இரு" [:tense/present :person/first :number/singular])
+  (get-inflection-for-word "இரு" ["present-tense" "first-person" "singular"])
 
   (d/q '[:find (pull ?e ["*"])
          :in $ ?tag
